@@ -1,0 +1,68 @@
+diff --git a/src/led.c b/src/led.c
+index 6610c00..c21c446 100644
+--- a/src/led.c
++++ b/src/led.c
+@@ -7,19 +7,6 @@
+ #include <zephyr/net/socket.h>
+ #include <zephyr/autoconf.h>
+ 
+-/**
+- * @brief Indica se a irrigação está em andamento.
+- */
+-static volatile bool esta_irrigando = false;
+-
+-/**
+- * @brief Guarda a última leitura do Pot1.
+- *
+- * Inicializado em 2000 para manter o sistema em estado seguro até a primeira
+- * leitura válida do ADC.
+- */
+-static volatile uint16_t ultima_umidade = 2000; 
+-
+ #define SLEEP_TIME_ON_MS   10000
+ #define SLEEP_TIME_OFF_MS  10000
+ #define LED0_NODE DT_ALIAS(led0)
+diff --git a/src/led.h b/src/led.h
+index 7ee19b3..55daefb 100644
+--- a/src/led.h
++++ b/src/led.h
+@@ -1,6 +1,17 @@
+ #ifndef LED_H
+ #define LED_H
+ 
++#include <stdbool.h>
++#include <stdint.h>
++
++/*
++ * Estado compartilhado entre a thread principal (main.c, que lê o ADC) e a thread
++ * do LED/irrigação (led.c). Definido UMA vez em main.c e declarado aqui como extern.
++ * Antes, cada arquivo tinha sua própria cópia `static`, e as threads nunca se viam.
++ */
++extern volatile bool esta_irrigando;
++extern volatile uint16_t ultima_umidade;
++
+ /**
+  * @brief Executa a thread responsável pelo controle do LED de irrigação.
+  */
+diff --git a/src/main.c b/src/main.c
+index fe1f12a..bdcd7ea 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -12,7 +12,7 @@
+ /**
+  * @brief Indica se a irrigação está em andamento.
+  */
+-static volatile bool esta_irrigando = false;
++volatile bool esta_irrigando = false;
+ 
+ /**
+  * @brief Guarda a última leitura do Pot1.
+@@ -20,7 +20,7 @@ static volatile bool esta_irrigando = false;
+  * Inicializado em 2000 para manter o sistema em estado seguro até a primeira
+  * leitura válida do ADC.
+  */
+-static volatile uint16_t ultima_umidade = 2000; 
++volatile uint16_t ultima_umidade = 2000;
+ 
+ /**
+  * @brief Estrutura com os dados publicados no canal Zbus.
